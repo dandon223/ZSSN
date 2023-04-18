@@ -7,9 +7,9 @@ import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 
-class RecurrentGCN(torch.nn.Module):
+class RGCNGRU(torch.nn.Module):
     def __init__(self, node_features):
-        super(RecurrentGCN, self).__init__()
+        super(RGCNGRU, self).__init__()
         self.recurrent = GConvGRU(node_features, 32, 1)
         self.linear = torch.nn.Linear(32, 1)
 
@@ -19,8 +19,20 @@ class RecurrentGCN(torch.nn.Module):
         h = self.linear(h)
         return h
 
+class RGCNLSTM(torch.nn.Module):
+    def __init__(self, node_features):
+        super(RGCNLSTM, self).__init__()
+        self.recurrent = GConvLSTM(node_features, 32, 1)
+        self.linear = torch.nn.Linear(32, 1)
 
-def demo():
+    def forward(self, x, edge_index, edge_weight):
+        h, _ = self.recurrent(x, edge_index, edge_weight)
+        h = F.relu(h)
+        h = self.linear(h)
+        return h
+
+
+def demo(model_str: str):
     """Metoda demo, gdzie implementuje z innym przygotowanym juz datasetem przez torch_geometric_temporal
     Klasa RecurrentGCN wydaje sie dla mnie (DG) klasa ostateczna dla naszego problemu przy korzystaniu z GConvGRU, poniewaz
     ma podobna wartosc MSE jak przy wykorzystaniu DCRNN, ktory wzialem z przykladu https://pytorch-geometric-temporal.readthedocs.io/en/latest/notes/introduction.html?highlight=temporal_signal_split#applications
@@ -29,7 +41,10 @@ def demo():
     dataset = loader.get_dataset(lags=4)
     train_dataset, test_dataset = temporal_signal_split(dataset, train_ratio=0.2)
 
-    model = RecurrentGCN(node_features = 4) # 4 poniewaz na podstawie 4 tygodniu przewidujemy kolejny
+    if model_str == 'GRU':
+        model = RGCNGRU(node_features = 4) # 4 poniewaz na podstawie 4 tygodniu przewidujemy kolejny
+    if model_str == 'LSTM':
+        model = RGCNLSTM(node_features = 4) # 4 poniewaz na podstawie 4 tygodniu przewidujemy kolejny
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
@@ -61,7 +76,7 @@ def main():
     #batch_size = 1
     #seq_length = 50
     #batch_loader = BatchLoader(batch_size, seq_length)
-    demo()
+    demo('LSTM')
 
 
 
