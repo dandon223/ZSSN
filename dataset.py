@@ -7,7 +7,15 @@ import math
 import matplotlib.pyplot as plt  
 from torchtext import data
 from torchtext import datasets
+from scipy.sparse import coo_matrix
 # proby dopasowania danych do tego co maja w githubie w https://github.com/youngjoo-epfl/gconvRNN
+
+def convert_to_one_hot(a, max_val=None):
+    #print('a.shape', a.shape)
+    N = a.shape[0]*a.shape[1] #a.size
+    data = np.ones(N,dtype=int)
+    sparse_out = coo_matrix((data,(np.arange(N),a.ravel())), shape=(N,max_val)).T
+    return torch.Tensor(np.array(sparse_out.todense()))
 
 def pklSave(fname, obj):
     with open(fname, 'wb') as f:
@@ -54,15 +62,15 @@ class BatchLoader():
             ydata = np.zeros_like(data)
             ydata[:-1] = data[1:].copy()
             ydata[-1] = data[0].copy()
-            print(data.shape)
-            print(type(data))
+            #print(data.shape)
+            #print(type(data))
 
-            x_batches = torch.from_numpy(data.reshape([-1, batch_size, seq_length]))
-            y_batches = torch.from_numpy(ydata.reshape([-1, batch_size, seq_length]))
+            x_batches = torch.Tensor(data.reshape([-1, batch_size, seq_length]))
+            y_batches =torch.Tensor(ydata.reshape([-1, batch_size, seq_length]))
             print(x_batches.shape)
-            print(x_batches)
+            #print(x_batches)
             print(y_batches.shape)
-            print(y_batches)
+            #print(y_batches)
             self.sizes.append(len(x_batches))
 
             self.all_batches.append([x_batches, y_batches])
@@ -70,6 +78,26 @@ class BatchLoader():
         self.batch_idx = [0, 0, 0]
         print("data load done. Number of batches in train: %d, val: %d, test: %d" \
                 % (self.sizes[0], self.sizes[1], self.sizes[2]))
+        self.edge_index = None
+        self.edge_attr = None
+        for x in range(self.adj.shape[0]):
+            for y in range(self.adj.shape[1]):
+                if self.adj[x][y] > 0:
+                    if self.edge_index == None:
+                        self.edge_index = torch.tensor([[x],[y]])
+                        self.edge_attr = torch.Tensor([1])
+                    else:
+                        self.edge_index = torch.cat((self.edge_index, torch.tensor([[x],[y]])), 1)
+                        self.edge_attr = torch.cat((self.edge_attr, torch.Tensor([1])), 0)
+        print('self.edge_index.shape', self.edge_index.shape)
+        print('self.edge_attr.shape', self.edge_attr.shape)
+
+
+    def get_edge_index(self):
+        return self.edge_index
+    
+    def get_edge_attr(self):
+        return self.edge_attr
 
     def next_batch(self, split_idx):
         # cycle around to beginning
@@ -85,7 +113,7 @@ class BatchLoader():
             batch_idx = 0
         self.batch_idx[split_idx] = batch_idx
 
-    def text_to_tensor(input_texts: str, vocab_fname: str, tensor_fname: str, Adj_fname: str):
+    def text_to_tensor(self, input_texts: str, vocab_fname: str, tensor_fname: str, Adj_fname: str):
 
         counts = []
         char2idx = {}
@@ -125,9 +153,13 @@ class BatchLoader():
 
         # Co-occurance
         Adj = np.zeros([len(idx2char), len(idx2char)])
+        counter = 0
         for x, y in zip(train_data, train_data_shift):
             Adj[x, y] += 1
+            if Adj[x,y] == 1:
+                counter +=1
         print(Adj)
+        print('counter', counter)
         print("Number of chars : train %d, val %d, test %d" % (counts[0], counts[1], counts[2]))
         #plt.scatter(x, y, alpha=0.8) 
         #plt.show()
