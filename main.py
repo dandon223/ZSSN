@@ -54,6 +54,7 @@ def demo(model_str: str):
     print("MSE: {:.4f}".format(cost))
 
 def ours(model_str: str):
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     num_epochs = 1
     batch_size = 1
     seq_length = 20
@@ -61,9 +62,9 @@ def ours(model_str: str):
     batch_loader = BatchLoader(batch_size, seq_length)
 
     if model_str =='GRU':
-        model = GConvGRU(seq_length, 1, 1)
+        model = GConvGRU(seq_length, 1, 1).to(device)
     if model_str == 'LSTM':
-        model = GConvLSTM(seq_length, 1, 1)
+        model = GConvLSTM(seq_length, 1, 1).to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     criterion = nn.CrossEntropyLoss()
@@ -82,8 +83,8 @@ def ours(model_str: str):
             #print('batch_x_onehot', batch_x_onehot)
             #print('batch_x.shape', batch_x.shape)
             #print('batch_x_onehot.shape', batch_x_onehot.shape)
-            reshaped = batch_x_onehot.reshape([num_nodes, seq_length]) # nie wiem co z batch_size
-            batch_x = reshaped
+            reshaped = batch_x_onehot.reshape([num_nodes, seq_length]) # nie wiem co z batch_size, oni maja [batch_size, num_nodes, seq_length]
+            batch_x = reshaped.to(device)
             #print('batch_x', batch_x)
             #print('batch_x.shape', batch_x.shape)
             #print('batch_y.shape', batch_y.shape)
@@ -93,7 +94,7 @@ def ours(model_str: str):
             #print('batch_y[:, -1].shape', batch_y[:, -1].reshape([1, 1]).shape)
             batch_y_onehot = convert_to_one_hot(batch_y[:, -1].reshape([1, 1]), num_nodes)
             reshaped = batch_y_onehot.reshape([num_nodes, 1])
-            batch_y = reshaped
+            batch_y = reshaped.to(device)
             #print('batch_y', batch_y)
             if model_str == 'LSTM':
                 y_hat, _ = model(batch_x, batch_loader.get_edge_index(), batch_loader.get_edge_attr())
