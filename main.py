@@ -1,4 +1,3 @@
-
 from dataset import BatchLoader, convert_to_one_hot
 from torch_geometric_temporal.nn.recurrent import GConvLSTM, GConvGRU, DCRNN
 from torch_geometric_temporal.dataset import ChickenpoxDatasetLoader
