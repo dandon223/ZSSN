@@ -7,7 +7,7 @@ conda env create -f environment.yml
 ```
 3. Activate the environment
 ```
-conda activate GCRNN
+conda activate ZSSN
 ```
 4. Pytorch verification
 ```
