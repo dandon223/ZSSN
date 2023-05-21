@@ -21,7 +21,7 @@ def train(model_str: str):
 
     learning_rate = 1
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    criterion = nn.BCELoss()
+    criterion = nn.CrossEntropyLoss()
 
     model.train()
 
@@ -43,18 +43,23 @@ def train(model_str: str):
                 reshaped = batch_x_onehot.reshape([num_nodes, seq_length])
                 batch_x = reshaped.to(device)
 
-                batch_y = batch_y[-1].reshape([1,1])
-                batch_y_onehot = convert_to_one_hot(batch_y, num_nodes)
-                reshaped = batch_y_onehot.reshape([num_nodes, 1])
-                batch_y = reshaped.to(device)
+                batch_y = batch_y[-1].reshape([1]).long().to(device)
+                #batch_y_onehot = convert_to_one_hot(batch_y, num_nodes)
+                #reshaped = batch_y_onehot.reshape([num_nodes, 1])
+                #batch_y = reshaped.to(device)
 
                 if 'LSTM' in model_str:
                     y_hat, _ = model(batch_x, batch_loader.get_edge_index().to(device), batch_loader.get_edge_attr().to(device))
                 else:
                     y_hat = model(batch_x, batch_loader.get_edge_index().to(device), batch_loader.get_edge_attr().to(device))
 
-                y_pred = torch.sigmoid(y_hat)
-                loss += criterion(y_pred, batch_y)
+                y_hat = y_hat.reshape(1, -1)
+                #print(y_hat)
+                #print(y_hat.shape)
+                #print(batch_y)
+                #print(batch_y.shape)
+                #y_pred = torch.sigmoid(y_hat)
+                loss += criterion(y_hat, batch_y)
 
             # Backward and optimize
             loss.backward()
@@ -68,7 +73,7 @@ def train(model_str: str):
 
             if (time+1) % 20 == 0:
                 print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}')
-            #break
+            break
 
         print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}')
 
@@ -83,15 +88,14 @@ def test(model_str: str):
     batch_size = 20
     batch_loader = BatchLoader(batch_size, seq_length)
 
-    criterion = nn.BCELoss()
+    criterion = nn.CrossEntropyLoss()
 
     model = torch.load(model_str)
     model.eval()
-
+    loss = 0
     for _ in range(batch_loader.sizes[2]): # 2 = test
 
         batches_x, batches_y = batch_loader.next_batch(2)
-        loss = 0
         for batch_id, batch in enumerate(batches_x):
 
             # Fetch training data
@@ -101,19 +105,16 @@ def test(model_str: str):
             reshaped = batch_x_onehot.reshape([num_nodes, seq_length])
             batch_x = reshaped.to(device)
 
-            batch_y = batch_y[-1].reshape([1,1])
-            batch_y_onehot = convert_to_one_hot(batch_y, num_nodes)
-            reshaped = batch_y_onehot.reshape([num_nodes, 1])
-            batch_y = reshaped.to(device)
+            batch_y = batch_y[-1].reshape([1]).long().to(device)
 
             if 'LSTM' in model_str:
                 y_hat, _ = model(batch_x, batch_loader.get_edge_index().to(device), batch_loader.get_edge_attr().to(device))
             else:
                 y_hat = model(batch_x, batch_loader.get_edge_index().to(device), batch_loader.get_edge_attr().to(device))
 
-            y_pred = torch.sigmoid(y_hat)
+            y_hat = y_hat.reshape(1, -1)
             #print(y_pred)
-            loss += criterion(y_pred, batch_y)
+            loss += criterion(y_hat, batch_y)
 
     print("loss = ", loss.item()/batch_loader.sizes[2])
 
