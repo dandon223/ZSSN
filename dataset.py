@@ -11,8 +11,7 @@ from scipy.sparse import coo_matrix
 # proby dopasowania danych do tego co maja w githubie w https://github.com/youngjoo-epfl/gconvRNN
 
 def convert_to_one_hot(a, max_val=None):
-    #print('a.shape', a.shape)
-    N = a.shape[0]*a.shape[1] #a.size
+    N = a.shape[0] #a.size
     data = np.ones(N,dtype=int)
     sparse_out = coo_matrix((data,(np.arange(N),a.ravel())), shape=(N,max_val)).T
     return torch.Tensor(np.array(sparse_out.todense()))
@@ -31,6 +30,9 @@ class BatchLoader():
         self.vocab_fname = "data/vocab_char.pkl"
         self.tensor_fname = "data/data_char.pkl"
         self.Adj_fname = "data/adj_char.pkl"
+        self.edge_index_fname = "data/edge_index"
+        self.edge_attr_fname = "data/edge_attr"
+
         train, valid, test = datasets.PennTreebank()
 
         train_data = self.preprocess_data(train)
@@ -45,8 +47,7 @@ class BatchLoader():
         adj = pklLoad(self.Adj_fname)
         all_data = pklLoad(self.tensor_fname)
         self.idx2char, self.char2idx = pklLoad(self.vocab_fname)
-        vocab_size = len(self.idx2char)
-        print(adj)
+        #print(adj)
 
         print("Char vocab size: %d" % (len(self.idx2char)))
         self.sizes = []
@@ -55,7 +56,7 @@ class BatchLoader():
         self.adj = adj
 
         print("Reshaping tensors...")
-        for split, data in enumerate(all_data):  # split = 0:train, 1:valid, 2:test
+        for _, data in enumerate(all_data):  # split = 0:train, 1:valid, 2:test
             
             length = data.shape[0]
             data = data[: batch_size * seq_length * int(math.floor(length / (batch_size * seq_length)))]
@@ -67,9 +68,9 @@ class BatchLoader():
 
             x_batches = torch.Tensor(data.reshape([-1, batch_size, seq_length]))
             y_batches =torch.Tensor(ydata.reshape([-1, batch_size, seq_length]))
-            print(x_batches.shape)
+            #print(x_batches.shape)
             #print(x_batches)
-            print(y_batches.shape)
+            #print(y_batches.shape)
             #print(y_batches)
             self.sizes.append(len(x_batches))
 
@@ -78,6 +79,14 @@ class BatchLoader():
         self.batch_idx = [0, 0, 0]
         print("data load done. Number of batches in train: %d, val: %d, test: %d" \
                 % (self.sizes[0], self.sizes[1], self.sizes[2]))
+        
+        if os.path.exists(self.edge_index_fname) and os.path.exists(self.edge_attr_fname):
+            self.edge_index = pklLoad(self.edge_index_fname)
+            self.edge_attr = pklLoad(self.edge_attr_fname)
+            print('self.edge_index.shape', self.edge_index.shape)
+            print('self.edge_attr.shape', self.edge_attr.shape)
+            return
+
         self.edge_index = None
         self.edge_attr = None
         for x in range(self.adj.shape[0]):
@@ -91,6 +100,9 @@ class BatchLoader():
                         self.edge_attr = torch.cat((self.edge_attr, torch.Tensor([1])), 0)
         print('self.edge_index.shape', self.edge_index.shape)
         print('self.edge_attr.shape', self.edge_attr.shape)
+
+        pklSave(self.edge_index_fname, self.edge_index)
+        pklSave(self.edge_attr_fname, self.edge_attr)
 
 
     def get_edge_index(self):
@@ -123,8 +135,8 @@ class BatchLoader():
         for input_text in input_texts:
             count = 0
             output_chars = []
-            for line in input_text: # w oryginale ostatnia wartosc line to lista pusta bo jest enter w pliku,a le tutaj nie zmieniam
-                chars_in_line = list(line)
+            for line in input_text: # w oryginale ostatnia wartosc line to lista pusta bo jest enter w pliku, ale tutaj nie zmieniam
+                chars_in_line = line.split() # Tak naprawde slowa a nie znaki.
                 chars_in_line.append('|')
                 for char in chars_in_line:
                     if char not in char2idx:
@@ -158,21 +170,21 @@ class BatchLoader():
             Adj[x, y] += 1
             if Adj[x,y] == 1:
                 counter +=1
-        print(Adj)
-        print('counter', counter)
+        #print(Adj)
+        #print('counter', counter)
         print("Number of chars : train %d, val %d, test %d" % (counts[0], counts[1], counts[2]))
         #plt.scatter(x, y, alpha=0.8) 
         #plt.show()
 
-        print(vocab_fname)
-        print(type(idx2char))
+        #print(vocab_fname)
         pklSave(vocab_fname, [idx2char, char2idx])
         pklSave(tensor_fname, output)
         pklSave(Adj_fname, Adj)
 
     def preprocess_data(self, data: list) -> list:
+        #return data
         new_data = []
         for line in data:
-            line = line.replace(' ', '_')
+            #line = line.replace(' ', '_')
             new_data.append(line)
         return new_data

@@ -15,6 +15,19 @@ import torch
 x = torch.rand(5, 3)
 print(x)
 ```
+# Dzialanie programu
+
+## Trening sieci
+```
+python main.py --train <ścieżka gdzie ma być zapisany model>
+```
+
+## Testowanie sieci
+```
+python main.py --test <ścieżka gdzie jest zapisany model>
+```
+## Uwagi
+* Nazwa modelu musi zawierać w sobie 'GRU' lub 'LSTM'
 
 # Strony z materialami
 
