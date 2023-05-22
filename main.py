@@ -89,16 +89,16 @@ def train(model_str: str):
             optimizer.step()
             optimizer.zero_grad()
 
-            expo = max(0, epoch+ 1)
-            learning_decay = 0.5**expo
-            learning_rate *= learning_decay
-            optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-
             if (time+1) % 20 == 0:
                 print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}')
             #break
 
-        print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}, Learning rate: {learning_rate:.4f}')
+        expo = max(0, epoch+1 - 4)
+        learning_decay = 0.5**expo
+        learning_rate *= learning_decay
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+        print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}, Learning rate: {learning_rate}')
 
     # Save model
     torch.save(model, model_str)
