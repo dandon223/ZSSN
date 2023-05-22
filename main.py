@@ -7,17 +7,21 @@ import torch.nn.functional as F
 import argparse
 
 class OURLSTM(torch.nn.Module):
-    def __init__(self, node_features):
+    def __init__(self, node_features, hidden_layer_size):
         super(OURLSTM, self).__init__()
-        self.recurrent = GConvLSTM(node_features, 200, 4)
-        self.dropout = nn.Dropout(0.2)
-        self.linear = torch.nn.Linear(200, 1)
+        self.recurrent = GConvLSTM(node_features, hidden_layer_size, 4)
+        #self.dropout = nn.Dropout(0.2)
+        self.linear = torch.nn.Linear(hidden_layer_size, 1)
 
     def forward(self, x, edge_index, edge_weight):
         h, _ = self.recurrent(x, edge_index, edge_weight)
-        h = self.dropout(h)
-        #h = F.relu(h)
+        #h = self.dropout(h)
+        h = F.relu(h)
+        #print("before", h)
+        #print(h.shape)
         h = self.linear(h)
+        #print(h)
+        #print(h.shape)
         return h
 
 def train(model_str: str):
@@ -27,12 +31,13 @@ def train(model_str: str):
     batch_size = 20
     seq_length = 20
     num_nodes = 10000
+    hidden_layer_size = 200
     batch_loader = BatchLoader(batch_size, seq_length)
 
     if 'GRU' in model_str:
         model = GConvGRU(seq_length, 1, 4).to(device)
     if 'LSTM' in model_str:
-        model = OURLSTM(seq_length).to(device)
+        model = OURLSTM(seq_length, hidden_layer_size).to(device)
 
     learning_rate = 1
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -84,7 +89,7 @@ def train(model_str: str):
             optimizer.step()
             optimizer.zero_grad()
 
-            expo = max(0, epoch+1 - 4)
+            expo = max(0, epoch+ 1)
             learning_decay = 0.5**expo
             learning_rate *= learning_decay
             optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -93,7 +98,7 @@ def train(model_str: str):
                 print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}')
             #break
 
-        print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}, Learning rate: {learning_rate}')
+        print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}, Learning rate: {learning_rate:.4f}')
 
     # Save model
     torch.save(model, model_str)
