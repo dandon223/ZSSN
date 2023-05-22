@@ -3,7 +3,22 @@ from dataset import BatchLoader, convert_to_one_hot
 from torch_geometric_temporal.nn.recurrent import GConvLSTM, GConvGRU
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import argparse
+
+class OURLSTM(torch.nn.Module):
+    def __init__(self, node_features):
+        super(OURLSTM, self).__init__()
+        self.recurrent = GConvLSTM(node_features, 200, 4)
+        self.dropout = nn.Dropout(0.2)
+        self.linear = torch.nn.Linear(200, 1)
+
+    def forward(self, x, edge_index, edge_weight):
+        h, _ = self.recurrent(x, edge_index, edge_weight)
+        h = self.dropout(h)
+        #h = F.relu(h)
+        h = self.linear(h)
+        return h
 
 def train(model_str: str):
 
@@ -17,13 +32,15 @@ def train(model_str: str):
     if 'GRU' in model_str:
         model = GConvGRU(seq_length, 1, 4).to(device)
     if 'LSTM' in model_str:
-        model = GConvLSTM(seq_length, 1, 4).to(device)
+        model = OURLSTM(seq_length).to(device)
 
     learning_rate = 1
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     criterion = nn.CrossEntropyLoss()
 
     model.train()
+
+    print(model)
 
     n_total_steps = batch_loader.sizes[0]
     for epoch in  range(num_epochs):
@@ -49,7 +66,7 @@ def train(model_str: str):
                 #batch_y = reshaped.to(device)
 
                 if 'LSTM' in model_str:
-                    y_hat, _ = model(batch_x, batch_loader.get_edge_index().to(device), batch_loader.get_edge_attr().to(device))
+                    y_hat = model(batch_x, batch_loader.get_edge_index().to(device), batch_loader.get_edge_attr().to(device))
                 else:
                     y_hat = model(batch_x, batch_loader.get_edge_index().to(device), batch_loader.get_edge_attr().to(device))
 
@@ -63,6 +80,7 @@ def train(model_str: str):
 
             # Backward and optimize
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 5)
             optimizer.step()
             optimizer.zero_grad()
 
@@ -73,9 +91,9 @@ def train(model_str: str):
 
             if (time+1) % 20 == 0:
                 print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}')
-            break
+            #break
 
-        print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}')
+        print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}, Learning rate: {learning_rate}')
 
     # Save model
     torch.save(model, model_str)
