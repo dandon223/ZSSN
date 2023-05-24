@@ -5,6 +5,32 @@ import torch
 import torch.nn as nn
 import argparse
 
+class OURLSTM(torch.nn.Module):
+    def __init__(self, node_features, hidden_layer_size):
+        super(OURLSTM, self).__init__()
+        self.recurrent = GConvLSTM(node_features, hidden_layer_size, 4)
+        self.dropout = nn.Dropout(0.15)
+        self.linear = torch.nn.Linear(hidden_layer_size, 1)
+
+    def forward(self, x, edge_index, edge_weight):
+        h, _ = self.recurrent(x, edge_index, edge_weight)
+        h = self.dropout(h)
+        h = self.linear(h)
+        return h
+
+class OURGRU(torch.nn.Module):
+    def __init__(self, node_features, hidden_layer_size):
+        super(OURGRU, self).__init__()
+        self.recurrent = GConvGRU(node_features, hidden_layer_size, 4)
+        self.dropout = nn.Dropout(0.15)
+        self.linear = torch.nn.Linear(hidden_layer_size, 1)
+
+    def forward(self, x, edge_index, edge_weight):
+        h, = self.recurrent(x, edge_index, edge_weight)
+        h = self.dropout(h)
+        h = self.linear(h)
+        return h
+
 def train(model_str: str):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -12,18 +38,21 @@ def train(model_str: str):
     batch_size = 20
     seq_length = 20
     num_nodes = 10000
+    hidden_layer_size = 200
     batch_loader = BatchLoader(batch_size, seq_length)
 
     if 'GRU' in model_str:
-        model = GConvGRU(seq_length, 1, 4).to(device)
+        model = OURGRU(seq_length, hidden_layer_size).to(device)
     if 'LSTM' in model_str:
-        model = GConvLSTM(seq_length, 1, 4).to(device)
+        model = OURLSTM(seq_length, hidden_layer_size).to(device)
 
     learning_rate = 1
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     criterion = nn.CrossEntropyLoss()
 
     model.train()
+
+    print(model)
 
     n_total_steps = batch_loader.sizes[0]
     for epoch in  range(num_epochs):
@@ -48,10 +77,7 @@ def train(model_str: str):
                 #reshaped = batch_y_onehot.reshape([num_nodes, 1])
                 #batch_y = reshaped.to(device)
 
-                if 'LSTM' in model_str:
-                    y_hat, _ = model(batch_x, batch_loader.get_edge_index().to(device), batch_loader.get_edge_attr().to(device))
-                else:
-                    y_hat = model(batch_x, batch_loader.get_edge_index().to(device), batch_loader.get_edge_attr().to(device))
+                y_hat = model(batch_x, batch_loader.get_edge_index().to(device), batch_loader.get_edge_attr().to(device))
 
                 y_hat = y_hat.reshape(1, -1)
                 #print(y_hat)
@@ -63,19 +89,20 @@ def train(model_str: str):
 
             # Backward and optimize
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 5)
             optimizer.step()
             optimizer.zero_grad()
 
-            expo = max(0, epoch+1 - 4)
-            learning_decay = 0.5**expo
-            learning_rate *= learning_decay
-            optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-
             if (time+1) % 20 == 0:
                 print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}')
-            break
+            #break
 
-        print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}')
+        expo = max(0, epoch+1 - 4)
+        learning_decay = 0.5**expo
+        learning_rate *= learning_decay
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+        print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}, Learning rate: {learning_rate}')
 
     # Save model
     torch.save(model, model_str)
@@ -118,10 +145,8 @@ def test(model_str: str):
 
     print("loss = ", loss.item()/batch_loader.sizes[2])
 
-    
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='ZSSN')
+    parser = argparse.ArgumentParser(description='ZZSN')
 
     parser.add_argument('--train', help='to run training', type=str)
     parser.add_argument('--test', help='to run evaluation', type=str)
