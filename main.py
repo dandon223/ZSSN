@@ -10,18 +10,26 @@ class OURLSTM(torch.nn.Module):
     def __init__(self, node_features, hidden_layer_size):
         super(OURLSTM, self).__init__()
         self.recurrent = GConvLSTM(node_features, hidden_layer_size, 4)
-        #self.dropout = nn.Dropout(0.2)
+        self.dropout = nn.Dropout(0.15)
         self.linear = torch.nn.Linear(hidden_layer_size, 1)
 
     def forward(self, x, edge_index, edge_weight):
         h, _ = self.recurrent(x, edge_index, edge_weight)
-        #h = self.dropout(h)
-        h = F.relu(h)
-        #print("before", h)
-        #print(h.shape)
+        h = self.dropout(h)
         h = self.linear(h)
-        #print(h)
-        #print(h.shape)
+        return h
+
+class OURGRU(torch.nn.Module):
+    def __init__(self, node_features, hidden_layer_size):
+        super(OURGRU, self).__init__()
+        self.recurrent = GConvGRU(node_features, hidden_layer_size, 4)
+        self.dropout = nn.Dropout(0.15)
+        self.linear = torch.nn.Linear(hidden_layer_size, 1)
+
+    def forward(self, x, edge_index, edge_weight):
+        h, = self.recurrent(x, edge_index, edge_weight)
+        h = self.dropout(h)
+        h = self.linear(h)
         return h
 
 def train(model_str: str):
@@ -35,7 +43,7 @@ def train(model_str: str):
     batch_loader = BatchLoader(batch_size, seq_length)
 
     if 'GRU' in model_str:
-        model = GConvGRU(seq_length, 1, 4).to(device)
+        model = OURGRU(seq_length, hidden_layer_size).to(device)
     if 'LSTM' in model_str:
         model = OURLSTM(seq_length, hidden_layer_size).to(device)
 
