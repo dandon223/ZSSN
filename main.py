@@ -3,7 +3,6 @@ from dataset import BatchLoader, convert_to_one_hot
 from torch_geometric_temporal.nn.recurrent import GConvLSTM, GConvGRU
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import argparse
 
 class OURLSTM(torch.nn.Module):
@@ -78,10 +77,7 @@ def train(model_str: str):
                 #reshaped = batch_y_onehot.reshape([num_nodes, 1])
                 #batch_y = reshaped.to(device)
 
-                if 'LSTM' in model_str:
-                    y_hat = model(batch_x, batch_loader.get_edge_index().to(device), batch_loader.get_edge_attr().to(device))
-                else:
-                    y_hat = model(batch_x, batch_loader.get_edge_index().to(device), batch_loader.get_edge_attr().to(device))
+                y_hat = model(batch_x, batch_loader.get_edge_index().to(device), batch_loader.get_edge_attr().to(device))
 
                 y_hat = y_hat.reshape(1, -1)
                 #print(y_hat)
@@ -149,10 +145,8 @@ def test(model_str: str):
 
     print("loss = ", loss.item()/batch_loader.sizes[2])
 
-    
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='ZSSN')
+    parser = argparse.ArgumentParser(description='ZZSN')
 
     parser.add_argument('--train', help='to run training', type=str)
     parser.add_argument('--test', help='to run evaluation', type=str)
