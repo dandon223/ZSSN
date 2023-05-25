@@ -9,7 +9,7 @@ class OURLSTM(torch.nn.Module):
     def __init__(self, node_features, hidden_layer_size):
         super(OURLSTM, self).__init__()
         self.recurrent = GConvLSTM(node_features, hidden_layer_size, 4)
-        self.dropout = nn.Dropout(0.15)
+        self.dropout = nn.Dropout(0.25)
         self.linear = torch.nn.Linear(hidden_layer_size, 1)
 
     def forward(self, x, edge_index, edge_weight):
@@ -22,7 +22,7 @@ class OURGRU(torch.nn.Module):
     def __init__(self, node_features, hidden_layer_size):
         super(OURGRU, self).__init__()
         self.recurrent = GConvGRU(node_features, hidden_layer_size, 4)
-        self.dropout = nn.Dropout(0.15)
+        self.dropout = nn.Dropout(0.25)
         self.linear = torch.nn.Linear(hidden_layer_size, 1)
 
     def forward(self, x, edge_index, edge_weight):
@@ -95,12 +95,13 @@ def train(model_str: str):
 
             if (time+1) % 20 == 0:
                 print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}')
-            #break
+            break
 
         expo = max(0, epoch+1 - 4)
         learning_decay = 0.5**expo
         learning_rate *= learning_decay
-        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+        for g in optimizer.param_groups:
+            g['lr'] = learning_rate
 
         print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}, Learning rate: {learning_rate}')
 
