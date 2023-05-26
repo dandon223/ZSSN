@@ -26,7 +26,7 @@ class OURGRU(torch.nn.Module):
         self.linear = torch.nn.Linear(hidden_layer_size, 1)
 
     def forward(self, x, edge_index, edge_weight):
-        h, = self.recurrent(x, edge_index, edge_weight)
+        h = self.recurrent(x, edge_index, edge_weight)
         h = self.dropout(h)
         h = self.linear(h)
         return h
@@ -63,6 +63,7 @@ def train(model_str: str):
 
             batches_x, batches_y = batch_loader.next_batch(0)
             loss = 0
+            perplexity = 0
             for batch_id, batch in enumerate(batches_x):
 
                 # Fetch training data
@@ -86,6 +87,7 @@ def train(model_str: str):
                 #print(batch_y.shape)
                 #y_pred = torch.sigmoid(y_hat)
                 loss += criterion(y_hat, batch_y)
+                perplexity  += torch.exp(criterion(y_hat, batch_y))
 
             # Backward and optimize
             loss.backward()
@@ -94,8 +96,8 @@ def train(model_str: str):
             optimizer.zero_grad()
 
             if (time+1) % 20 == 0:
-                print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}')
-            break
+                print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}, Perplexity: {perplexity/batch_size}')
+            #break
 
         expo = max(0, epoch+1 - 4)
         learning_decay = 0.5**expo
@@ -103,7 +105,7 @@ def train(model_str: str):
         for g in optimizer.param_groups:
             g['lr'] = learning_rate
 
-        print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}, Learning rate: {learning_rate}')
+        print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}, Learning rate: {learning_rate}, Perplexity: {perplexity/batch_size}')
 
     # Save model
     torch.save(model, model_str)
