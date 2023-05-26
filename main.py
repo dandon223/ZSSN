@@ -25,8 +25,8 @@ class OURGRU(torch.nn.Module):
         self.dropout = nn.Dropout(0.25)
         self.linear = torch.nn.Linear(hidden_layer_size, 1)
 
-    def forward(self, x, edge_index, edge_weight=None):
-        h, = self.recurrent(x, edge_index, edge_weight)
+    def forward(self, x, edge_index, edge_weight):
+        h = self.recurrent(x, edge_index, edge_weight)
         h = self.dropout(h)
         h = self.linear(h)
         return h
@@ -70,6 +70,7 @@ def train(model_str: str):
             print("new_batches_y", new_batches_y.shape)
             edge_index = torch.LongTensor().to(device)
             print("edge_index", edge_index.shape)
+            perplexity = 0
             for batch_id, batch in enumerate(batches_x):
 
                 # Fetch training data
@@ -80,6 +81,20 @@ def train(model_str: str):
                 batch_x = reshaped.to(device)
 
                 batch_y = batch_y[-1].reshape([1]).long().to(device)
+                #batch_y_onehot = convert_to_one_hot(batch_y, num_nodes)
+                #reshaped = batch_y_onehot.reshape([num_nodes, 1])
+                #batch_y = reshaped.to(device)
+
+                y_hat = model(batch_x, batch_loader.get_edge_index().to(device), batch_loader.get_edge_attr().to(device))
+
+                y_hat = y_hat.reshape(1, -1)
+                #print(y_hat)
+                #print(y_hat.shape)
+                #print(batch_y)
+                #print(batch_y.shape)
+                #y_pred = torch.sigmoid(y_hat)
+                loss += criterion(y_hat, batch_y)
+                perplexity  += torch.exp(criterion(y_hat, batch_y))
 
                 edge_index_temp = torch.clone(batch_loader.get_edge_index()).to(device)
 
@@ -108,8 +123,8 @@ def train(model_str: str):
             optimizer.zero_grad()
 
             if (time+1) % 20 == 0:
-                print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}')
-            break
+                print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}, Perplexity: {perplexity/batch_size}')
+            #break
 
         expo = max(0, epoch+1 - 4)
         learning_decay = 0.5**expo
@@ -117,7 +132,7 @@ def train(model_str: str):
         for g in optimizer.param_groups:
             g['lr'] = learning_rate
 
-        print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}, Learning rate: {learning_rate}')
+        print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item()/batch_size:.4f}, Learning rate: {learning_rate}, Perplexity: {perplexity/batch_size}')
 
     # Save model
     torch.save(model, model_str)
