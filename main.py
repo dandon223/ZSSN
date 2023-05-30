@@ -25,7 +25,7 @@ class OURGRU(torch.nn.Module):
         self.dropout = nn.Dropout(0.25)
         self.linear = torch.nn.Linear(hidden_layer_size, 1)
 
-    def forward(self, x, edge_index, edge_weight):
+    def forward(self, x, edge_index, edge_weight=None):
         h = self.recurrent(x, edge_index, edge_weight)
         h = self.dropout(h)
         h = self.linear(h)
@@ -35,7 +35,7 @@ def train(model_str: str):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     num_epochs = 13
-    batch_size = 20
+    batch_size = 4
     seq_length = 20
     num_nodes = 10000
     hidden_layer_size = 200
@@ -50,12 +50,11 @@ def train(model_str: str):
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     criterion = nn.CrossEntropyLoss()
 
-    model.train()
-
     print(model)
 
     n_total_steps = batch_loader.sizes[0]
     for epoch in  range(num_epochs):
+        model.train()
 
         expo = max(0, epoch+1 - 4)
         learning_decay = 0.5**expo
@@ -64,11 +63,11 @@ def train(model_str: str):
             g['lr'] = learning_rate
 
         batch_loader.reset_batch_pointer(0)
-
+        loss_sum = 0.0
+        loops=0
         for time in range(batch_loader.sizes[0]): # 0 = training
 
             batches_x, batches_y = batch_loader.next_batch(0)
-            #print(batches_x.shape)
             new_batches_x = torch.Tensor().to(device)
             new_batches_y = torch.LongTensor().to(device)
             edge_index = torch.LongTensor().to(device)
@@ -92,16 +91,12 @@ def train(model_str: str):
                 new_batches_x = torch.cat((new_batches_x, batch_x), 0)
                 new_batches_y = torch.cat((new_batches_y, batch_y), 0)
 
-            #print("new_batches_x.shape", new_batches_x.shape)
-            #print("edge_index.shape", edge_index.shape)
-            #print("new_batches_y.shape", new_batches_y.shape)
             y_hat = model(new_batches_x, edge_index.to(device))
-            #print("y_hat.shape", y_hat.shape)
             y_hat = y_hat.reshape(batch_size, -1)
-            #print("y_hat.shape", y_hat.shape)
-            #print("new_batches_y", new_batches_y)
 
             loss = criterion(y_hat, new_batches_y)
+            loss_sum += loss.item()
+            loops += 1
             perplexity  = torch.exp(criterion(y_hat, new_batches_y))
             # Backward and optimize
             loss.backward()
@@ -109,34 +104,33 @@ def train(model_str: str):
             optimizer.step()
             optimizer.zero_grad()
 
-            if (time+1) % 20 == 0:
+            if (time+1) % 1000 == 0:
                 print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item():.4f}, Perplexity: {perplexity}')
-            #break
 
-        print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item():.4f}, Learning rate: {learning_rate}, Perplexity: {perplexity}')
-
+        print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss_sum/loops:.4f}, Learning rate: {learning_rate}, Perplexity: {torch.exp(torch.tensor(loss_sum/loops))}')
+        test(model, batch_loader, epoch, num_epochs, batch_size, seq_length, num_nodes)
     # Save model
     torch.save(model, model_str)
 
-def test(model_str: str):
+def test(model, batch_loader, epoch, num_epochs, batch_size, seq_length, num_nodes):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    num_nodes = 10000
-    seq_length = 20
-    batch_size = 20
-    batch_loader = BatchLoader(batch_size, seq_length)
 
     criterion = nn.CrossEntropyLoss()
 
-    model = torch.load(model_str)
     model.eval()
+    batch_loader.reset_batch_pointer(2)
+    loops = 0
     loss = 0
     for _ in range(batch_loader.sizes[2]): # 2 = test
 
         batches_x, batches_y = batch_loader.next_batch(2)
+        new_batches_x = torch.Tensor().to(device)
+        new_batches_y = torch.LongTensor().to(device)
+        edge_index = torch.LongTensor().to(device)
         for batch_id, batch in enumerate(batches_x):
 
-            # Fetch training data
+            # Fetch testing data
             batch_x = batch
             batch_y = batches_y[batch_id]
             batch_x_onehot = convert_to_one_hot(batch_x, num_nodes)
@@ -145,16 +139,19 @@ def test(model_str: str):
 
             batch_y = batch_y[-1].reshape([1]).long().to(device)
 
-            if 'LSTM' in model_str:
-                y_hat, _ = model(batch_x, batch_loader.get_edge_index().to(device), batch_loader.get_edge_attr().to(device))
-            else:
-                y_hat = model(batch_x, batch_loader.get_edge_index().to(device), batch_loader.get_edge_attr().to(device))
+            edge_index_temp = torch.clone(batch_loader.get_edge_index()).to(device)
 
-            y_hat = y_hat.reshape(1, -1)
-            #print(y_pred)
-            loss += criterion(y_hat, batch_y)
+            edge_index_temp += batch_id * num_nodes
+            edge_index = torch.cat((edge_index, edge_index_temp), 1)
+            new_batches_x = torch.cat((new_batches_x, batch_x), 0)
+            new_batches_y = torch.cat((new_batches_y, batch_y), 0)
+        
+        y_hat = model(new_batches_x, edge_index.to(device))
+        y_hat = y_hat.reshape(batch_size, -1)
+        loss += criterion(y_hat, new_batches_y).item()
+        loops += 1
 
-    print("loss = ", loss.item()/batch_loader.sizes[2])
+    print (f'Test Epoch [{epoch+1}/{num_epochs}], Loss: {loss/loops:.4f}, Perplexity: {torch.exp(torch.tensor(loss/loops)).item()}')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='ZZSN')
