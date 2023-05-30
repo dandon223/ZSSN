@@ -33,9 +33,12 @@ class OURGRU(torch.nn.Module):
 
 def train(model_str: str):
 
+    f = open("results.txt", "a")
+    f.write("\n" + model_str + "\n")
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     num_epochs = 13
-    batch_size = 4
+    batch_size = 8
     seq_length = 20
     num_nodes = 10000
     hidden_layer_size = 200
@@ -107,10 +110,12 @@ def train(model_str: str):
             if (time+1) % 1000 == 0:
                 print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss.item():.4f}, Perplexity: {perplexity}')
 
-        print (f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss_sum/loops:.4f}, Learning rate: {learning_rate}, Perplexity: {torch.exp(torch.tensor(loss_sum/loops))}')
-        test(model, batch_loader, epoch, num_epochs, batch_size, seq_length, num_nodes)
+        print(f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss_sum/loops:.4f}, Learning rate: {learning_rate}, Perplexity: {torch.exp(torch.tensor(loss_sum/loops))}')
+        f.write(f'Epoch [{epoch+1}/{num_epochs}], Step [{time+1}/{n_total_steps}], Loss: {loss_sum/loops:.4f}, Learning rate: {learning_rate}, Perplexity: {torch.exp(torch.tensor(loss_sum/loops))}\n')
+        f.write(test(model, batch_loader, epoch, num_epochs, batch_size, seq_length, num_nodes))
     # Save model
     torch.save(model, model_str)
+    f.close()
 
 def test(model, batch_loader, epoch, num_epochs, batch_size, seq_length, num_nodes):
 
@@ -152,6 +157,7 @@ def test(model, batch_loader, epoch, num_epochs, batch_size, seq_length, num_nod
         loops += 1
 
     print (f'Test Epoch [{epoch+1}/{num_epochs}], Loss: {loss/loops:.4f}, Perplexity: {torch.exp(torch.tensor(loss/loops)).item()}')
+    return f'Test Epoch [{epoch+1}/{num_epochs}], Loss: {loss/loops:.4f}, Perplexity: {torch.exp(torch.tensor(loss/loops)).item()}\n'
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='ZZSN')
