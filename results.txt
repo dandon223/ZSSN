@@ -1,0 +1,57 @@
+model/LSTM.pth
+batch_size=16
+Epoch [1/13], Step [2904/2904], Loss: 7.9229, Learning rate: 1.0, Perplexity: 2759.78955078125
+Test Epoch [1/13], Loss: 7.2926, Perplexity: 1469.3934326171875
+Epoch [2/13], Step [2904/2904], Loss: 7.6673, Learning rate: 1.0, Perplexity: 2137.4033203125
+Test Epoch [2/13], Loss: 7.0880, Perplexity: 1197.455322265625
+Epoch [3/13], Step [2904/2904], Loss: 7.5506, Learning rate: 1.0, Perplexity: 1901.85009765625
+Test Epoch [3/13], Loss: 7.3011, Perplexity: 1482.0030517578125
+Epoch [4/13], Step [2904/2904], Loss: 7.4014, Learning rate: 1.0, Perplexity: 1638.2445068359375
+Test Epoch [4/13], Loss: 7.0617, Perplexity: 1166.368408203125
+Epoch [5/13], Step [2904/2904], Loss: 7.0573, Learning rate: 0.5, Perplexity: 1161.26171875
+Test Epoch [5/13], Loss: 6.9492, Perplexity: 1042.30126953125
+Epoch [6/13], Step [2904/2904], Loss: 6.7971, Learning rate: 0.125, Perplexity: 895.24267578125
+Test Epoch [6/13], Loss: 6.8256, Perplexity: 921.1220092773438
+Epoch [7/13], Step [2904/2904], Loss: 6.7023, Learning rate: 0.015625, Perplexity: 814.2614135742188
+Test Epoch [7/13], Loss: 6.7886, Perplexity: 887.6500244140625
+Epoch [8/13], Step [2904/2904], Loss: 6.6835, Learning rate: 0.0009765625, Perplexity: 799.1044921875
+Test Epoch [8/13], Loss: 6.7789, Perplexity: 879.0606689453125
+Epoch [9/13], Step [2904/2904], Loss: 6.6913, Learning rate: 3.0517578125e-05, Perplexity: 805.3607788085938
+Test Epoch [9/13], Loss: 6.7782, Perplexity: 878.4790649414062
+Epoch [10/13], Step [2904/2904], Loss: 6.6913, Learning rate: 4.76837158203125e-07, Perplexity: 805.3876953125
+Test Epoch [10/13], Loss: 6.7782, Perplexity: 878.468994140625
+Epoch [11/13], Step [2904/2904], Loss: 6.6890, Learning rate: 3.725290298461914e-09, Perplexity: 803.50732421875
+Test Epoch [11/13], Loss: 6.7782, Perplexity: 878.468994140625
+Epoch [12/13], Step [2904/2904], Loss: 6.6965, Learning rate: 1.4551915228366852e-11, Perplexity: 809.5664672851562
+Test Epoch [12/13], Loss: 6.7782, Perplexity: 878.468994140625
+Epoch [13/13], Step [2904/2904], Loss: 6.6855, Learning rate: 2.842170943040401e-14, Perplexity: 800.7011108398438
+Test Epoch [13/13], Loss: 6.7782, Perplexity: 878.468994140625
+
+batch_size=20
+model/GRU.pth
+Epoch [1/13], Step [2323/2323], Loss: 8.2772, Learning rate: 1.0, Perplexity: 3933.041259765625
+Test Epoch [1/13], Loss: 7.3996, Perplexity: 1635.35986328125
+Epoch [2/13], Step [2323/2323], Loss: 7.5192, Learning rate: 1.0, Perplexity: 1843.0902099609375
+Test Epoch [2/13], Loss: 7.1101, Perplexity: 1224.2113037109375
+Epoch [3/13], Step [2323/2323], Loss: 7.2618, Learning rate: 1.0, Perplexity: 1424.8702392578125
+Test Epoch [3/13], Loss: 7.1241, Perplexity: 1241.4825439453125
+Epoch [4/13], Step [2323/2323], Loss: 7.2082, Learning rate: 1.0, Perplexity: 1350.4830322265625
+Test Epoch [4/13], Loss: 7.0904, Perplexity: 1200.360595703125
+Epoch [5/13], Step [2323/2323], Loss: 6.7157, Learning rate: 0.5, Perplexity: 825.2349853515625
+Test Epoch [5/13], Loss: 6.7412, Perplexity: 846.5473022460938
+Epoch [6/13], Step [2323/2323], Loss: 6.4238, Learning rate: 0.125, Perplexity: 616.35546875
+Test Epoch [6/13], Loss: 6.5234, Perplexity: 680.8773803710938
+Epoch [7/13], Step [2323/2323], Loss: 6.3057, Learning rate: 0.015625, Perplexity: 547.6983032226562
+Test Epoch [7/13], Loss: 6.4815, Perplexity: 652.9490966796875
+Epoch [8/13], Step [2323/2323], Loss: 6.2809, Learning rate: 0.0009765625, Perplexity: 534.2744140625
+Test Epoch [8/13], Loss: 6.4763, Perplexity: 649.5604858398438
+Epoch [9/13], Step [2323/2323], Loss: 6.2742, Learning rate: 3.0517578125e-05, Perplexity: 530.7054443359375
+Test Epoch [9/13], Loss: 6.4761, Perplexity: 649.423583984375
+Epoch [10/13], Step [2323/2323], Loss: 6.2823, Learning rate: 4.76837158203125e-07, Perplexity: 535.0147094726562
+Test Epoch [10/13], Loss: 6.4761, Perplexity: 649.423583984375
+Epoch [11/13], Step [2323/2323], Loss: 6.2840, Learning rate: 3.725290298461914e-09, Perplexity: 535.94775390625
+Test Epoch [11/13], Loss: 6.4761, Perplexity: 649.423583984375
+Epoch [12/13], Step [2323/2323], Loss: 6.2710, Learning rate: 1.4551915228366852e-11, Perplexity: 529.0108642578125
+Test Epoch [12/13], Loss: 6.4761, Perplexity: 649.423583984375
+Epoch [13/13], Step [2323/2323], Loss: 6.2845, Learning rate: 2.842170943040401e-14, Perplexity: 536.193359375
+Test Epoch [13/13], Loss: 6.4761, Perplexity: 649.423583984375
