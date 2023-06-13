@@ -1,5 +1,6 @@
 
 from dataset import BatchLoader, convert_to_one_hot
+from results_visualiser import visualise_results
 from torch_geometric_temporal.nn.recurrent import GConvLSTM, GConvGRU
 import torch
 import torch.nn as nn
@@ -171,3 +172,5 @@ if __name__ == "__main__":
         train(args.train)
     elif args.test is not None:
         test(args.test)
+
+    visualise_results()
